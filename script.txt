@@ -273,7 +273,7 @@ SELECT parse_json($1):business_id,
 		parse_json($1):date 
 		FROM udacityproject.staging.yelp_checkin;
 
-8- covid
+--8 covid
 
 INSERT INTO covid(Call_To_Action_enabled,Covid_Banner,Grubhub_enabled,Request_a_Quote_Enabled, Temporary_Closed_Until,
 Virtual_Services_Offered,business_id,delivery_or_takeout,highlights)
