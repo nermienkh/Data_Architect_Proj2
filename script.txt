@@ -323,3 +323,62 @@ from udacityproject.staging.yelp_covid_features ;
 	ON b.business_id = x.business_id
     	JOIN udacityproject.ods.user AS u
     	ON u.user_id = r.user_id;
+
+
+-- DWH 
+
+-- fact table
+
+
+
+CREATE TABLE fact_table 
+(business_id_f string, review_id VARIANT, user_id_f string, date_temperature date, date_precipitation date);
+
+insert into  fact_table (business_id_f , review_id , user_id_f , date_temperature , date_precipitation )
+	select b.business_id , r.review_id , u.user_id , t.date_t , t.date_t
+    FROM udacityproject.ods.precipitation AS p
+	JOIN udacityproject.ods.review AS r 
+	ON r.date = p.date_t
+	JOIN udacityproject.ods.temperature AS t
+	ON t.date_t = r.date
+	JOIN udacityproject.ods.business AS b
+	ON b.business_id = r.business_id
+   	JOIN udacityproject.ods.covid AS c
+	ON b.business_id = c.business_id
+	JOIN udacityproject.ods.checkin AS ci
+	ON b.business_id = ci.business_id
+	JOIN udacityproject.ods.tip AS x
+	ON b.business_id = x.business_id
+    	JOIN udacityproject.ods.user AS u
+    	ON u.user_id = r.user_id;
+-- number of inserted rows 20096
+
+-- clone dimension tables
+CREATE TABLE  udacityproject.DWH.covid CLONE udacityproject.ods.covid ;
+
+CREATE TABLE udacityproject.DWH.tip CLONE udacityproject.ods.tip;
+
+CREATE TABLE udacityproject.DWH.user CLONE udacityproject.ods.user ;
+
+CREATE TABLE udacityproject.DWH.review CLONE udacityproject.ods.review;
+
+CREATE TABLE udacityproject.DWH.business CLONE udacityproject.ods.business ;
+
+CREATE TABLE udacityproject.DWH.checkin CLONE udacityproject.ods.checkin ;
+
+CREATE TABLE udacityproject.DWH.precipitation CLONE udacityproject.ods.precipitation;
+
+CREATE TABLE udacityproject.DWH.temperature CLONE udacityproject.ods.temperature;
+
+/*report business name, temperature, precipitation, ratings*/
+
+SELECT  b.name, t.min_t, t.max_t, t.normal_min, t.normal_max, p.precipitation, p.precipitation_normal, r.text,,r.stars
+FROM business AS b
+JOIN fact_table AS f 
+ON b.business_id = f.business_id_f
+JOIN temperature AS t
+ON t.date_t = f.date_temperature
+JOIN precipitation AS p
+ON p.date_t = f.date_precipitation
+JOIN review AS r
+ON r.review_id = f.review_id;
