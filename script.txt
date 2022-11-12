@@ -83,25 +83,22 @@ file_format=my_json_format on_error='skip_file';
 
 -- ods tables
 
-CREATE TABLE precipitation (
-	date_t DATE,
-	precipitation double,
-	precipitation_normal double);
-
-CREATE TABLE temperature (
-	date_t DATE,
-	min_t INT,
-	max_t INT,
-	normal_min double,
-	normal_max double);
+create or replace TABLE UDACITYPROJECT.ODS.PRECIPITATION (
+	DATE_T DATE,
+	PRECIPITATION FLOAT,
+	PRECIPITATION_NORMAL FLOAT,
+	primary key (DATE_T)
+);
 
 
-CREATE TABLE tip (
-	business_id STRING,
-	compliment_count INTEGER,
-	date STRING,
-	text STRING,
-	user_id STRING); 
+create or replace TABLE UDACITYPROJECT.ODS.TEMPERATURE (
+	DATE_T DATE,
+	MIN_T NUMBER(38,0),
+	MAX_T NUMBER(38,0),
+	NORMAL_MIN FLOAT,
+	NORMAL_MAX FLOAT,
+	primary key (DATE_T)
+);
 
 CREATE TABLE business (
 	business_id string,
@@ -117,7 +114,8 @@ CREATE TABLE business (
 	is_open NUMBER,
 	attribute VARIANT,
 	categories VARCHAR,
-	hours VARIANT);
+	hours VARIANT, primary key (business_id));
+
 
 
 CREATE TABLE user (
@@ -141,25 +139,41 @@ CREATE TABLE user (
 	name VARCHAR,
 	review_count NUMBER,
 	useful NUMBER,
-	user_id VARCHAR,
-	yelping_since STRING);
+	user_id string,
+	yelping_since STRING,  PRIMARY KEY (user_id));
 
 
-	
-CREATE TABLE review(
-  business_id VARIANT,
-  cool NUMBER,
-  date STRING,
-  funny NUMBER,
-  review_id VARIANT,
-  stars NUMBER,
-  text STRING,
-  useful NUMBER,
-  user_id VARIANT);
+
+
+
+CREATE TABLE tip (
+	business_id STRING REFERENCES business(business_id),
+	compliment_count INTEGER,
+	date STRING,
+	text STRING,
+	user_id STRING  REFERENCES user(user_id)); 
+
+
+create or replace TABLE UDACITYPROJECT.ODS.REVIEW (
+	BUSINESS_ID VARCHAR(16777216),
+	COOL NUMBER(38,0),
+	DATE VARCHAR(16777216),
+	FUNNY NUMBER(38,0),
+	REVIEW_ID VARIANT,
+	STARS NUMBER(38,0),
+	TEXT VARCHAR(16777216),
+	USEFUL NUMBER(38,0),
+	USER_ID VARCHAR(16777216),
+	primary key (REVIEW_ID),
+	foreign key (BUSINESS_ID) references UDACITYPROJECT.ODS.BUSINESS(BUSINESS_ID),
+	foreign key (USER_ID) references UDACITYPROJECT.ODS.USER(USER_ID)
+);
 
 CREATE TABLE checkin(
-	business_id VARIANT,
+	business_id string  REFERENCES business(business_id),
 	date STRING);
+ 
+
 
 CREATE TABLE covid (
 	Call_To_Action_enabled VARIANT,
@@ -168,10 +182,11 @@ CREATE TABLE covid (
 	Request_a_Quote_Enabled VARIANT,
 	Temporary_Closed_Until VARIANT,
 	Virtual_Services_Offered VARIANT,
-	business_id VARIANT,
+	business_id string,
 	delivery_or_takeout VARIANT,
 	highlights VARIANT);
-	
+ALTER TABLE covid ADD FOREIGN KEY (business_id) REFERENCES business(business_id); 
+
 
 -------------------------------------------------
 -- move data from staging to ods
@@ -288,3 +303,23 @@ SELECT
 	parse_json($1):"delivery or takeout",
 	parse_json($1):"highlights" 
 from udacityproject.staging.yelp_covid_features ;
+
+
+-- query to join all attributes into one big table 
+
+ SELECT * 
+	FROM udacityproject.ods.precipitation AS p
+	JOIN udacityproject.ods.review AS r 
+	ON r.date = p.date_t
+	JOIN udacityproject.ods.temperature AS t
+	ON t.date_t = r.date
+	JOIN udacityproject.ods.business AS b
+	ON b.business_id = r.business_id
+   	JOIN udacityproject.ods.covid AS c
+	ON b.business_id = c.business_id
+	JOIN udacityproject.ods.checkin AS ci
+	ON b.business_id = ci.business_id
+	JOIN udacityproject.ods.tip AS x
+	ON b.business_id = x.business_id
+    	JOIN udacityproject.ods.user AS u
+    	ON u.user_id = r.user_id;
